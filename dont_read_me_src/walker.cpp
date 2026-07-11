@@ -65,6 +65,62 @@ bool is_virtualenv_root(const std::string& dir_abs)
     return false;
 }
 
+// A checked-out git submodule has a `.git` entry that is a FILE (a gitdir
+// pointer like "gitdir: ../../.git/modules/..."), unlike a normal repo whose
+// `.git` is a directory. We treat such a directory as the root of external
+// (submodule) code and skip it wholesale.
+bool is_submodule_root(const std::string& dir_abs)
+{
+    const std::string dotgit = fs::join(dir_abs, ".git");
+    struct ::stat st;
+    if (::lstat(dotgit.c_str(), &st) != 0)
+        return false;
+    // A regular file (or a symlink) named .git inside a directory is the
+    // classic submodule marker. A .git directory means this is just a normal
+    // nested git repo, which we don't treat as third-party on that basis alone.
+    return S_ISREG(st.st_mode) || S_ISLNK(st.st_mode);
+}
+
+// Parse a .gitmodules file at `root` and add every "path = ..." entry to the
+// given IgnoreSet, so checked-out submodules are excluded by their declared
+// location (works even before .git is populated). Paths are relative to root.
+void add_submodule_paths(const std::string& root, IgnoreSet& set)
+{
+    const std::string gm = fs::join(root, ".gitmodules");
+    std::string content;
+    if (!fs::read_file(gm, content))
+        return;
+    // Lines look like:   path = libs/fmtlib
+    std::size_t pos = 0;
+    while (pos < content.size()) {
+        const auto nl = content.find('\n', pos);
+        const std::string_view line = (nl == std::string_view::npos)
+            ? std::string_view(content).substr(pos)
+            : std::string_view(content).substr(pos, nl - pos);
+        // Trim leading spaces.
+        std::string_view l = line;
+        while (!l.empty() && (l.front() == ' ' || l.front() == '\t' || l.front() == '\r'))
+            l.remove_prefix(1);
+        if (l.compare(0, 5, "path ") == 0 || l.compare(0, 5, "path\t") == 0 ||
+            l.rfind("path ", 0) == 0 || l.rfind("path\t", 0) == 0) {
+            // Find '=' and take the trimmed value after it.
+            const auto eq = l.find('=');
+            if (eq != std::string_view::npos) {
+                std::string_view val = l.substr(eq + 1);
+                while (!val.empty() && (val.front() == ' ' || val.front() == '\t'))
+                    val.remove_prefix(1);
+                while (!val.empty() && (val.back() == ' ' || val.back() == '\t' || val.back() == '\r'))
+                    val.remove_suffix(1);
+                if (!val.empty())
+                    set.add_pattern(val);  // anchored relative to root (basename-only if no '/')
+            }
+        }
+        if (nl == std::string_view::npos)
+            break;
+        pos = nl + 1;
+    }
+}
+
 void walk_dir(const std::string& dir_abs,
               IgnoreStack& stack,
               bool use_gitignore,
@@ -126,6 +182,10 @@ void walk_dir(const std::string& dir_abs,
             // project's own code.
             if (is_virtualenv_root(full))
                 continue;
+            // Git submodule detection: a directory whose ".git" is a file (a
+            // gitdir pointer) is a checked-out submodule = external code.
+            if (is_submodule_root(full))
+                continue;
             walk_dir(full, stack, use_gitignore, out, depth + 1);
         } else {
             if (stack.is_ignored(full, /*is_dir=*/false))
@@ -166,6 +226,9 @@ std::vector<FoundFile> walk(const std::string& root,
         IgnoreSet defaults(root_abs);
         for (const std::string& p : default_ignore_patterns())
             defaults.add_pattern(p);
+        // .gitmodules: exclude the locations declared for git submodules, so
+        // checked-out external repositories are not counted as project code.
+        add_submodule_paths(root_abs, defaults);
         if (!defaults.empty())
             stack.push(std::move(defaults));
     }

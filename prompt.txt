@@ -11,7 +11,8 @@ WHAT IT DOES
   Third-party/vendored dirs are excluded by name (vendor, third_party,
   subprojects, external, node_modules, ...) and virtualenvs are excluded by
   marker (pyvenv.cfg, conda-meta), so dependencies are never counted as your
-  code — regardless of the venv's name.
+  code — regardless of the venv's name. Git submodules are excluded too (via
+  .gitmodules paths and the submodule .git-file marker).
   Respects .gitignore / .ignore / .dockerignore / .npmignore / .rgignore.
 
 HOW TO CALL

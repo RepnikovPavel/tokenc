@@ -175,7 +175,7 @@ const std::vector<std::string>& default_ignore_patterns()
         // Version control
         for (const char* p : {
             ".git", ".svn", ".hg", ".bzr", ".gitignore", ".gitattributes", ".gitmodules",
-            ".git-blame-ignore-revs",
+            ".git-blame-ignore-revs", ".mailmap",
         }) v.emplace_back(p);
         // Dependency directories (vendored third-party code, package managers)
         for (const char* p : {
