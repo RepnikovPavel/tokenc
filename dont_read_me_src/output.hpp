@@ -25,4 +25,10 @@ std::string render_tsv(const std::vector<LanguageStats>& stats,
                        std::uint64_t total_files,
                        std::uint64_t total_lines);
 
+// Render a pretty psql-style table with box-drawing borders, right-aligned
+// numbers, sorted by lines descending. Intended for human reading (--format).
+std::string render_table(const std::vector<LanguageStats>& stats,
+                         std::uint64_t total_files,
+                         std::uint64_t total_lines);
+
 }  // namespace tokenc

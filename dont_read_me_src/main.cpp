@@ -6,7 +6,9 @@
 //   path                  Directory or file to count (default: .)
 //   --no-gitignore        Ignore .gitignore/.ignore/.dockerignore files
 //   --no-default-ignore   Disable the built-in non-code ignore list
+//   --include-generated   Count machine-generated files (excluded by default)
 //   --no-cache            Do not read or write the line cache
+//   --format              Pretty psql-like table (default is machine TSV)
 //   -j, --jobs=N          Worker threads (default: hardware concurrency)
 //   -h, --help            Show help and exit
 //   -v, --version         Print version and exit
@@ -40,13 +42,16 @@ void print_help()
         "\n"
         "  Counts physical lines of recognized source files in a directory tree.\n"
         "  Respects .gitignore and a built-in non-code ignore list.\n"
+        "  Machine-generated files (protoc/gRPC/thrift/codegen output) are excluded.\n"
         "  Output is TSV: language<TAB>files<TAB>lines, plus a Total row.\n"
         "\n"
         "Options:\n"
         "  path                    Directory or file to count (default: .)\n"
         "      --no-gitignore      Ignore .gitignore/.ignore/.dockerignore files\n"
         "      --no-default-ignore Disable the built-in non-code ignore list\n"
+        "      --include-generated Count machine-generated files (off by default)\n"
         "      --no-cache          Do not read or write the line cache\n"
+        "      --format            Pretty psql-like table instead of TSV\n"
         "  -j, --jobs=N            Worker threads (default: auto)\n"
         "  -h, --help              Show this help and exit\n"
         "  -v, --version           Print version and exit\n",
@@ -79,6 +84,8 @@ int main(int argc, char** argv)
     bool use_gitignore = true;
     bool use_default_ignore = true;
     bool use_cache = true;
+    bool include_generated = false;   // generated code excluded by default
+    bool pretty_format = false;       // default output is machine TSV
     unsigned jobs = 0;
     bool path_set = false;
 
@@ -94,6 +101,10 @@ int main(int argc, char** argv)
             use_gitignore = false;
         } else if (arg == "--no-default-ignore") {
             use_default_ignore = false;
+        } else if (arg == "--include-generated") {
+            include_generated = true;
+        } else if (arg == "--format") {
+            pretty_format = true;
         } else if (arg == "--no-cache") {
             use_cache = false;
         } else if (arg == "-j" || arg == "--jobs") {
@@ -129,11 +140,14 @@ int main(int argc, char** argv)
     std::uint64_t total_files = 0;
     std::uint64_t total_lines = 0;
     std::vector<tokenc::LanguageStats> stats =
-        tokenc::count_all(files, cache.get(), jobs, total_files, total_lines);
+        tokenc::count_all(files, cache.get(), jobs, total_files, total_lines,
+                          /*skip_generated=*/!include_generated);
 
     if (cache) cache->flush();
 
-    const std::string report = tokenc::render_tsv(stats, total_files, total_lines);
+    const std::string report = pretty_format
+        ? tokenc::render_table(stats, total_files, total_lines)
+        : tokenc::render_tsv(stats, total_files, total_lines);
     std::fputs(report.c_str(), stdout);
     return 0;
 }

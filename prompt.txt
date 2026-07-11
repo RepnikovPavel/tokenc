@@ -13,6 +13,9 @@ WHAT IT DOES
   marker (pyvenv.cfg, conda-meta), so dependencies are never counted as your
   code — regardless of the venv's name. Git submodules are excluded too (via
   .gitmodules paths and the submodule .git-file marker).
+  Machine-generated files (protoc / protoc-gen-* / gRPC / Thrift / mockgen /
+  openapi-generator output, @generated) are detected by their top-of-file
+  banner and excluded by default; use --include-generated to count them.
   Respects .gitignore / .ignore / .dockerignore / .npmignore / .rgignore.
 
 HOW TO CALL
@@ -34,7 +37,9 @@ OUTPUT  (TSV, tab-separated, deterministic, easy to parse)
 FLAGS
   --no-gitignore        Ignore all .gitignore-style files
   --no-default-ignore   Disable the built-in non-code ignore list
+  --include-generated   Count machine-generated files (off by default)
   --no-cache            Do not read or write the on-disk cache
+  --format              Pretty psql-style table for humans (instead of TSV)
   -j, --jobs=N          Worker threads (default: auto)
   --version             Print version
   --help                Short help
