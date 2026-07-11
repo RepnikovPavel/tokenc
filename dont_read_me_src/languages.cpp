@@ -238,18 +238,10 @@ const std::vector<std::string>& default_ignore_patterns()
         }) v.emplace_back(p);
         // Minified bundles & source maps (machine-generated, not hand-written code)
         for (const char* p : {"*.min.js", "*.min.mjs", "*.min.css", "*.map"}) v.emplace_back(p);
-        // Machine-generated code by filename convention. These names are the
-        // canonical, unambiguous output of protoc / protoc-gen-* generators, so
-        // matching the filename is both cheaper and more reliable than reading
-        // file headers. (Header-based detection in the counter still catches the
-        // rest — thrift, mockgen, openapi-generator, etc.) Generic names like
-        // *.gen.go are intentionally NOT matched here (they are caught by header).
-        for (const char* p : {
-            "*.pb.go", "*_grpc.pb.go",                 // protoc-gen-go / -go-grpc
-            "*.pb.cc", "*.pb.h", "*.pb.c", "*.pb.cpp", "*.pb.m", "*.pb.mm", // protoc C/C++/ObjC
-            "*_pb2.py", "*_pb2_grpc.py",               // protoc python
-            "*_pb.dart", "*_pb2.dart", "*.pb.dart",    // protoc dart
-        }) v.emplace_back(p);
+        // Note: generated-code filenames (*.pb.go, *_pb2.py, *.pb.cc, ...) are NOT
+        // listed here. They are detected in the counter (see is_generated_file),
+        // which is governed by the --include-generated flag. Putting them in this
+        // default-ignore list would make them un-includable.
         // Lock files
         for (const char* p : {
             "package-lock.json", "yarn.lock", "pnpm-lock.yaml",

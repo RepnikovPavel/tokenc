@@ -100,8 +100,44 @@ bool header_has_generated_marker(const char* data, std::size_t n)
 
 }  // namespace
 
+// Canonical protoc / protoc-gen-* output filenames. These are unambiguous and
+// never hand-written, so matching by basename is reliable AND keeps the files
+// reachable via --include-generated (unlike putting them in default-ignore).
+// Returns true if the basename of `path` ends with one of these suffixes.
+bool filename_is_generated(const std::string& path)
+{
+    // Extract basename.
+    std::size_t base = path.find_last_of("/\\");
+    std::string name = (base == std::string::npos) ? path : path.substr(base + 1);
+
+    auto ends_with = [&](std::string_view suf) {
+        return name.size() >= suf.size() &&
+               name.compare(name.size() - suf.size(), suf.size(), suf) == 0;
+    };
+    // protoc-gen-go / protoc-gen-go-grpc
+    if (ends_with(".pb.go")) return true;
+    if (ends_with("_grpc.pb.go")) return true;
+    // protoc C / C++ / Objective-C
+    if (ends_with(".pb.cc")) return true;
+    if (ends_with(".pb.cpp")) return true;
+    if (ends_with(".pb.c")) return true;
+    if (ends_with(".pb.h")) return true;
+    if (ends_with(".pb.m")) return true;
+    if (ends_with(".pb.mm")) return true;
+    // protoc Python
+    if (ends_with("_pb2.py")) return true;
+    if (ends_with("_pb2_grpc.py")) return true;
+    // protoc Dart
+    if (ends_with(".pb.dart")) return true;
+    if (ends_with("_pb.dart")) return true;
+    if (ends_with("_pb2.dart")) return true;
+    return false;
+}
+
 bool is_generated_file(const std::string& path)
 {
+    if (filename_is_generated(path))
+        return true;
     const int fd = ::open(path.c_str(), O_RDONLY | O_CLOEXEC);
     if (fd < 0)
         return false;
