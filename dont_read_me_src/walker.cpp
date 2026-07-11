@@ -47,6 +47,24 @@ bool load_ignore_for_dir(const std::string& dir_abs, IgnoreStack& stack)
     return pushed;
 }
 
+// Marker files that identify a virtualenv / conda env / installed-packages tree
+// regardless of the directory's name. If any of these is present, the whole
+// directory is treated as third-party and never descended into.
+bool is_virtualenv_root(const std::string& dir_abs)
+{
+    // pyvenv.cfg — created by venv/virtualenv/poetry/uv for every virtualenv.
+    if (fs::file_exists(fs::join(dir_abs, "pyvenv.cfg")))
+        return true;
+    // conda-meta/ — created by conda for every environment.
+    {
+        struct ::stat st;
+        const std::string p = fs::join(dir_abs, "conda-meta");
+        if (::stat(p.c_str(), &st) == 0 && S_ISDIR(st.st_mode))
+            return true;
+    }
+    return false;
+}
+
 void walk_dir(const std::string& dir_abs,
               IgnoreStack& stack,
               bool use_gitignore,
@@ -101,6 +119,12 @@ void walk_dir(const std::string& dir_abs,
 
         if (e.stat.is_directory) {
             if (stack.is_ignored(full, /*is_dir=*/true))
+                continue;
+            // Virtualenv / installed-packages detection: a directory containing
+            // pyvenv.cfg or conda-meta is a Python environment (possibly with an
+            // arbitrary name), so skip it wholesale — its contents are never the
+            // project's own code.
+            if (is_virtualenv_root(full))
                 continue;
             walk_dir(full, stack, use_gitignore, out, depth + 1);
         } else {

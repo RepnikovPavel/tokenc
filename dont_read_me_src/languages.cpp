@@ -177,16 +177,25 @@ const std::vector<std::string>& default_ignore_patterns()
             ".git", ".svn", ".hg", ".bzr", ".gitignore", ".gitattributes", ".gitmodules",
             ".git-blame-ignore-revs",
         }) v.emplace_back(p);
-        // Dependency directories
+        // Dependency directories (vendored third-party code, package managers)
         for (const char* p : {
-            "node_modules", "bower_components", "jspm_packages", ".pnp",
-            "vendor", "Pods", "Carthage", "Dependencies", ".bundle",
+            "node_modules", "bower_components", "jspm_packages", ".pnp", ".yarn",
+            "vendor", "vendors", "vendored",
+            "third_party", "3rd-party", "3rdparty", "thirdparty",
+            "external", "externals", "ext",
+            "subprojects", "submodule", "submodules",
+            "deps", "Dependencies", "dependencies",
+            "Pods", "Carthage", "SwiftPackageManager", ".build",
+            ".bundle", "gems",
         }) v.emplace_back(p);
-        // Python caches / venvs
+        // Python caches / venvs. We catch venvs two ways: by name here, and by
+        // the pyvenv.cfg / conda-meta markers in the walker (see walker.cpp),
+        // which covers virtualenvs with arbitrary names.
         for (const char* p : {
             "__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache", ".tox",
-            ".nox", ".venv", "venv", "env", ".env", ".eggs", "*.egg-info", "*.egg-info/",
-            "site-packages", ".python-version",
+            ".nox", ".venv", ".venvs", "venv", "venvs", "env", "envs", ".env",
+            ".eggs", "*.egg-info", "*.egg-info/", "*.egg-link",
+            "site-packages", "dist-packages", ".python-version",
         }) v.emplace_back(p);
         // Build / output directories
         for (const char* p : {

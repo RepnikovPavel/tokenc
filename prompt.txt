@@ -8,6 +8,10 @@ WHAT IT DOES
   Counts ONLY real code files. Ignores data/config/markup (json, yaml, xml,
   toml, ini, txt, md, html, css, lockfiles, ...) and non-source artifacts
   (build dirs, node_modules, __pycache__, *.o, *.class, minified bundles, ...).
+  Third-party/vendored dirs are excluded by name (vendor, third_party,
+  subprojects, external, node_modules, ...) and virtualenvs are excluded by
+  marker (pyvenv.cfg, conda-meta), so dependencies are never counted as your
+  code — regardless of the venv's name.
   Respects .gitignore / .ignore / .dockerignore / .npmignore / .rgignore.
 
 HOW TO CALL

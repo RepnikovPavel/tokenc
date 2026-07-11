@@ -35,7 +35,11 @@ walk() ──> [FoundFile list] ──> count_all() ──> [LanguageStats] ─�
 1. **Code filter** — only recognized source extensions are considered at all.
 2. **Built-in defaults** (`--no-default-ignore` to disable) — VCS/dep/build dirs,
    compiled artifacts, minified bundles, lock files, IDE folders.
-3. **Ignore files** (`--no-gitignore` to disable) — `.gitignore`, `.ignore`,
+3. **Virtualenv markers** — any directory containing `pyvenv.cfg` or
+   `conda-meta/` is treated as a Python environment and skipped wholesale,
+   regardless of its name. This catches `venv`, `.venv`, `env`, and any
+   custom-named env that the name list above would miss.
+4. **Ignore files** (`--no-gitignore` to disable) — `.gitignore`, `.ignore`,
    `.dockerignore`, `.npmignore`, `.rgignore`, read at every directory level
    and composed exactly like git does, including `!` negation.
 
