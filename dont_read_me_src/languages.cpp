@@ -227,8 +227,29 @@ const std::vector<std::string>& default_ignore_patterns()
             "*.o", "*.obj", "*.a", "*.so", "*.so.*", "*.dylib", "*.dll",
             "*.lib", "*.exe", "*.wasm", "*.pdb",
         }) v.emplace_back(p);
+        // Archives / packages / installers (not source; never hand-written code)
+        for (const char* p : {
+            "*.zip", "*.tar", "*.tar.gz", "*.tgz", "*.tar.bz2", "*.tbz2", "*.tar.xz", "*.txz",
+            "*.gz", "*.bz2", "*.xz", "*.zst", "*.lz4", "*.7z", "*.rar",
+            "*.jar", "*.war", "*.ear", "*.whl", "*.egg", "*.gem", "*.nupkg", "*.snupkg",
+            "*.deb", "*.rpm", "*.apk", "*.msi", "*.pkg", "*.dmg", "*.iso",
+            "*.vsix", "*.vsixmanifest",            // VS Code extension packages
+            "*.crx", "*.xpi", "*.ova", "*.img",
+        }) v.emplace_back(p);
         // Minified bundles & source maps (machine-generated, not hand-written code)
         for (const char* p : {"*.min.js", "*.min.mjs", "*.min.css", "*.map"}) v.emplace_back(p);
+        // Machine-generated code by filename convention. These names are the
+        // canonical, unambiguous output of protoc / protoc-gen-* generators, so
+        // matching the filename is both cheaper and more reliable than reading
+        // file headers. (Header-based detection in the counter still catches the
+        // rest — thrift, mockgen, openapi-generator, etc.) Generic names like
+        // *.gen.go are intentionally NOT matched here (they are caught by header).
+        for (const char* p : {
+            "*.pb.go", "*_grpc.pb.go",                 // protoc-gen-go / -go-grpc
+            "*.pb.cc", "*.pb.h", "*.pb.c", "*.pb.cpp", "*.pb.m", "*.pb.mm", // protoc C/C++/ObjC
+            "*_pb2.py", "*_pb2_grpc.py",               // protoc python
+            "*_pb.dart", "*_pb2.dart", "*.pb.dart",    // protoc dart
+        }) v.emplace_back(p);
         // Lock files
         for (const char* p : {
             "package-lock.json", "yarn.lock", "pnpm-lock.yaml",
