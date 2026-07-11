@@ -1,0 +1,44 @@
+# tokenc — line counter for source code (for AI agents / LLMs)
+#
+# This file is a minimal, low-token brief you can include in an agent's context.
+# Full docs: see ./if_necessary_you_can_read_me/  Source: ./dont_read_me_src/
+
+WHAT IT DOES
+  Counts physical lines of source code in a directory tree (recursive).
+  Counts ONLY real code files. Ignores data/config/markup (json, yaml, xml,
+  toml, ini, txt, md, html, css, lockfiles, ...) and non-source artifacts
+  (build dirs, node_modules, __pycache__, *.o, *.class, minified bundles, ...).
+  Respects .gitignore / .ignore / .dockerignore / .npmignore / .rgignore.
+
+HOW TO CALL
+  tokenc [path]            # path defaults to current directory "."
+  tokenc /some/folder
+  tokenc /some/file.py     # also works on a single file
+
+OUTPUT  (TSV, tab-separated, deterministic, easy to parse)
+  language<TAB>files<TAB>lines
+  C++<TAB>8<TAB>1325
+  Python<TAB>2<TAB>3
+  ...
+  Total<TAB>10<TAB>1328
+
+  Rows are sorted by lines descending. The last row is always "Total".
+  Lines = physical lines: each '\n' is one line, plus one more if the file
+  does not end with a newline. Blank and comment lines are included.
+
+FLAGS
+  --no-gitignore        Ignore all .gitignore-style files
+  --no-default-ignore   Disable the built-in non-code ignore list
+  --no-cache            Do not read or write the on-disk cache
+  -j, --jobs=N          Worker threads (default: auto)
+  --version             Print version
+  --help                Short help
+
+IF tokenc IS NOT INSTALLED
+  See ./read_me_if_it_is_not_installed/  (one-line install for humans, agents,
+  and Docker images). The binary must already exist on PATH for normal use.
+
+NOTES FOR AGENTS
+  - Output is stdout only; errors go to stderr. Exit code 0 on success.
+  - Output is stable across runs on the same tree — safe to diff or parse.
+  - Symlinks are never followed. Cache lives in $XDG_CACHE_HOME/tokenc/.

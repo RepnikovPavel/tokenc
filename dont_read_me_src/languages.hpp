@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: 0BSD
 // Language classification: file extension -> language name, plus the built-in
 // "default ignore" list of obvious non-code files and directories.
 //

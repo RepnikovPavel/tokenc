@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: 0BSD
 // Thin POSIX filesystem helpers used across tokenc. Kept header-only-ish with
 // a small .cpp to centralize includes; nothing here depends on C++ std::filesystem
 // (we walk dirent/stat directly for speed and predictable symlink behavior).

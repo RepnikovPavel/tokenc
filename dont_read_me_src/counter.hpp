@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: 0BSD
 // Fast physical line counting using mmap and a thread pool.
 //
 // A "line" is a maximal run of bytes terminated by '\n'. A file that does not

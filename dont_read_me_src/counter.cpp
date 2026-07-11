@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: 0BSD
 #include "counter.hpp"
 
 #include <fcntl.h>

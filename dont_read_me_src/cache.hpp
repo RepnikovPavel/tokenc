@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: 0BSD
 // An on-disk cache of file identity -> line count, stored under the XDG cache
 // directory. The cache is a best-effort optimization for repeated runs over the
 // same tree: if a file's (dev, ino, size, mtime_ns) all match, its previously

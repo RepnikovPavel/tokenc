@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: 0BSD
 // A focused re-implementation of git's pathspec matching used by .gitignore.
 //
 // We implement the subset that matters for counting source lines:

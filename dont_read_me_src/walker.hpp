@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: 0BSD
 // Recursive directory walker that respects ignore rules.
 //
 // The walk is depth-first. At each directory we look for an ignore file
