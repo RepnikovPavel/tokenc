@@ -31,9 +31,12 @@ struct FoundFile {
 
 // Walk `root` and return every source file not excluded by ignore rules.
 // `use_gitignore` controls whether .gitignore-style files are honored;
-// `use_default_ignore` toggles the built-in non-code ignore list.
+// `use_default_ignore` toggles the built-in non-code ignore list;
+// `include_submodules` (the --all flag) makes the walker descend into git
+// submodules instead of skipping them as third-party code.
 std::vector<FoundFile> walk(const std::string& root,
                             bool use_gitignore,
-                            bool use_default_ignore);
+                            bool use_default_ignore,
+                            bool include_submodules);
 
 }  // namespace tokenc

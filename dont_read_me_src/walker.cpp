@@ -124,6 +124,7 @@ void add_submodule_paths(const std::string& root, IgnoreSet& set)
 void walk_dir(const std::string& dir_abs,
               IgnoreStack& stack,
               bool use_gitignore,
+              bool include_submodules,
               std::vector<FoundFile>& out,
               unsigned depth)
 {
@@ -183,10 +184,11 @@ void walk_dir(const std::string& dir_abs,
             if (is_virtualenv_root(full))
                 continue;
             // Git submodule detection: a directory whose ".git" is a file (a
-            // gitdir pointer) is a checked-out submodule = external code.
-            if (is_submodule_root(full))
+            // gitdir pointer) is a checked-out submodule = external code. The
+            // --all flag (include_submodules) opts into descending anyway.
+            if (!include_submodules && is_submodule_root(full))
                 continue;
-            walk_dir(full, stack, use_gitignore, out, depth + 1);
+            walk_dir(full, stack, use_gitignore, include_submodules, out, depth + 1);
         } else {
             if (stack.is_ignored(full, /*is_dir=*/false))
                 continue;
@@ -205,7 +207,8 @@ void walk_dir(const std::string& dir_abs,
 
 std::vector<FoundFile> walk(const std::string& root,
                             bool use_gitignore,
-                            bool use_default_ignore)
+                            bool use_default_ignore,
+                            bool include_submodules)
 {
     std::vector<FoundFile> out;
 
@@ -228,12 +231,14 @@ std::vector<FoundFile> walk(const std::string& root,
             defaults.add_pattern(p);
         // .gitmodules: exclude the locations declared for git submodules, so
         // checked-out external repositories are not counted as project code.
-        add_submodule_paths(root_abs, defaults);
+        // Skipped when --all is set, so submodule contents are reachable.
+        if (!include_submodules)
+            add_submodule_paths(root_abs, defaults);
         if (!defaults.empty())
             stack.push(std::move(defaults));
     }
 
-    walk_dir(root_abs, stack, use_gitignore, out, 0);
+    walk_dir(root_abs, stack, use_gitignore, include_submodules, out, 0);
     return out;
 }
 

@@ -7,6 +7,7 @@
 //   --no-gitignore        Ignore .gitignore/.ignore/.dockerignore files
 //   --no-default-ignore   Disable the built-in non-code ignore list
 //   --include-generated   Count machine-generated files (excluded by default)
+//   --all                 Descend into git submodules (excluded by default)
 //   --no-cache            Do not read or write the line cache
 //   --format              Pretty psql-like table (default is machine TSV)
 //   -j, --jobs=N          Worker threads (default: hardware concurrency)
@@ -50,6 +51,7 @@ void print_help()
         "      --no-gitignore      Ignore .gitignore/.ignore/.dockerignore files\n"
         "      --no-default-ignore Disable the built-in non-code ignore list\n"
         "      --include-generated Count machine-generated files (off by default)\n"
+        "      --all               Descend into git submodules (off by default)\n"
         "      --no-cache          Do not read or write the line cache\n"
         "      --format            Pretty psql-like table instead of TSV\n"
         "  -j, --jobs=N            Worker threads (default: auto)\n"
@@ -85,6 +87,7 @@ int main(int argc, char** argv)
     bool use_default_ignore = true;
     bool use_cache = true;
     bool include_generated = false;   // generated code excluded by default
+    bool include_submodules = false;  // git submodules skipped by default
     bool pretty_format = false;       // default output is machine TSV
     unsigned jobs = 0;
     bool path_set = false;
@@ -103,6 +106,8 @@ int main(int argc, char** argv)
             use_default_ignore = false;
         } else if (arg == "--include-generated") {
             include_generated = true;
+        } else if (arg == "--all") {
+            include_submodules = true;
         } else if (arg == "--format") {
             pretty_format = true;
         } else if (arg == "--no-cache") {
@@ -131,7 +136,7 @@ int main(int argc, char** argv)
     }
 
     std::vector<tokenc::FoundFile> files =
-        tokenc::walk(path, use_gitignore, use_default_ignore);
+        tokenc::walk(path, use_gitignore, use_default_ignore, include_submodules);
 
     std::unique_ptr<tokenc::LineCache> cache;
     if (use_cache)

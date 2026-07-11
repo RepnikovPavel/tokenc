@@ -11,8 +11,9 @@ WHAT IT DOES
   Third-party/vendored dirs are excluded by name (vendor, third_party,
   subprojects, external, node_modules, ...) and virtualenvs are excluded by
   marker (pyvenv.cfg, conda-meta), so dependencies are never counted as your
-  code — regardless of the venv's name. Git submodules are excluded too (via
-  .gitmodules paths and the submodule .git-file marker).
+  code — regardless of the venv's name. Git submodules are excluded by default
+  (via .gitmodules paths and the submodule .git-file marker); use --all to
+  descend into them.
   Machine-generated files (protoc / protoc-gen-* / gRPC / Thrift / mockgen /
   openapi-generator output, @generated) are detected by BOTH filename
   (*.pb.go, *_grpc.pb.go, *_pb2.py, *.pb.cc, ...) and top-of-file banner, and
@@ -39,6 +40,7 @@ FLAGS
   --no-gitignore        Ignore all .gitignore-style files
   --no-default-ignore   Disable the built-in non-code ignore list
   --include-generated   Count machine-generated files (off by default)
+  --all                 Descend into git submodules (off by default)
   --no-cache            Do not read or write the on-disk cache
   --format              Pretty psql-style table for humans (instead of TSV)
   -j, --jobs=N          Worker threads (default: auto)
