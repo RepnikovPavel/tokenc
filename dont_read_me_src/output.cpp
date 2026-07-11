@@ -2,6 +2,7 @@
 #include "output.hpp"
 
 #include <algorithm>
+#include <cstdio>
 #include <sstream>
 #include <string>
 
@@ -40,10 +41,37 @@ std::string render_table(const std::vector<LanguageStats>& stats_in,
 {
     const auto stats = sorted(stats_in);
 
+    // Format a per-language share of total_lines as a human-readable percentage.
+    //   >= 10%      -> one decimal  (e.g. "82.4%")
+    //   1% .. 10%  -> one decimal  (e.g. "5.7%")
+    //   < 1%       -> two decimals (e.g. "0.04%"), but "<0.01%" if truly tiny
+    //   total == 0 -> "-"          (avoid division by zero)
+    auto fmt_pct = [&](std::uint64_t lines) -> std::string {
+        if (total_lines == 0)
+            return "-";
+        double pct = 100.0 * static_cast<double>(lines) / static_cast<double>(total_lines);
+        if (pct > 0.0 && pct < 0.01)
+            return "<0.01%";
+        char buf[16];
+        if (pct >= 1.0)
+            std::snprintf(buf, sizeof(buf), "%.1f%%", pct);
+        else
+            std::snprintf(buf, sizeof(buf), "%.2f%%", pct);
+        return buf;
+    };
+
+    // Pre-format the percentage column so its width can be measured.
+    std::vector<std::string> pct_col;
+    pct_col.reserve(stats.size() + 1);
+    for (const auto& s : stats)
+        pct_col.push_back(fmt_pct(s.lines));
+    pct_col.push_back("100.0%");  // Total row
+
     // Column widths.
     std::size_t w_lang = std::string("language").size();
     std::size_t w_files = std::string("files").size();
     std::size_t w_lines = std::string("lines").size();
+    std::size_t w_pct = std::string("lines %").size();
     auto num_len = [](std::uint64_t n) {
         std::size_t l = 1;
         for (std::uint64_t x = n; x >= 10; x /= 10) ++l;
@@ -56,6 +84,8 @@ std::string render_table(const std::vector<LanguageStats>& stats_in,
     }
     w_files = std::max(w_files, num_len(total_files));
     w_lines = std::max(w_lines, num_len(total_lines));
+    for (const auto& p : pct_col)
+        w_pct = std::max(w_pct, p.size());
 
     auto pad_l = [](const std::string& s, std::size_t w) {
         return s + std::string(w >= s.size() ? w - s.size() : 0, ' ');
@@ -72,23 +102,27 @@ std::string render_table(const std::vector<LanguageStats>& stats_in,
         out << std::string(w_files + 2, '-');
         out << '+';
         out << std::string(w_lines + 2, '-');
+        out << '+';
+        out << std::string(w_pct + 2, '-');
         out << "+\n";
     };
     auto row = [&](const std::string& lang, const std::string& files,
-                   const std::string& lines) {
+                   const std::string& lines, const std::string& pct) {
         out << "| " << pad_l(lang, w_lang)
             << " | " << pad_r(files, w_files)
-            << " | " << pad_r(lines, w_lines) << " |\n";
+            << " | " << pad_r(lines, w_lines)
+            << " | " << pad_r(pct, w_pct) << " |\n";
     };
 
     sep();
-    row("language", "files", "lines");
+    row("language", "files", "lines", "lines %");
     sep();
-    for (const auto& s : stats) {
-        row(s.language, std::to_string(s.files), std::to_string(s.lines));
+    for (std::size_t i = 0; i < stats.size(); ++i) {
+        row(stats[i].language, std::to_string(stats[i].files),
+            std::to_string(stats[i].lines), pct_col[i]);
     }
     sep();
-    row("Total", std::to_string(total_files), std::to_string(total_lines));
+    row("Total", std::to_string(total_files), std::to_string(total_lines), "100.0%");
     sep();
     return out.str();
 }
