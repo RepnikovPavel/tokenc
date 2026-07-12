@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(tokenc VERSION 1.1.0 LANGUAGES CXX)
+project(tokenc VERSION 1.1.1 LANGUAGES CXX)
 
 # --- Build settings --------------------------------------------------------
 # C++17 and g++ 9+ are deliberately the only compiler requirements, so tokenc
@@ -20,6 +20,11 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang"
     add_link_options($<$<CONFIG:RELEASE>:-Wl,--gc-sections>)
 endif()
 
+# Embed scripts/tokenc_tokenize.py into the binary (no runtime share/ dependency).
+file(READ "${CMAKE_SOURCE_DIR}/scripts/tokenc_tokenize.py" TOKENC_TOKENIZE_PY)
+file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/tokenize_script.inc"
+    "#pragma once\nstatic const char kEmbeddedTokenizeScript[] = R\"TOKENC(\n${TOKENC_TOKENIZE_PY})TOKENC\";\n")
+
 # --- The executable --------------------------------------------------------
 add_executable(tokenc
     dont_read_me_src/main.cpp
@@ -33,7 +38,8 @@ add_executable(tokenc
     dont_read_me_src/tokenize.cpp
 )
 
-target_include_directories(tokenc PRIVATE dont_read_me_src)
+target_include_directories(tokenc PRIVATE dont_read_me_src ${CMAKE_CURRENT_BINARY_DIR})
+
 find_package(Threads REQUIRED)
 target_link_libraries(tokenc PRIVATE Threads::Threads)
 

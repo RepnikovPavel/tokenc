@@ -285,7 +285,8 @@ std::vector<LanguageStats> count_all(std::vector<FoundFile>& files,
             todo_idx.push_back(i);
         }
         std::unordered_map<std::string, TokenCounts> tok_map;
-        if (tokenize_files(todo_paths, tok_map)) {
+        std::string tok_err;
+        if (tokenize_files(todo_paths, tok_map, tok_err)) {
             for (std::size_t k = 0; k < todo_idx.size(); ++k) {
                 const std::size_t i = todo_idx[k];
                 if (auto it = tok_map.find(files[i].path); it != tok_map.end()) {
@@ -293,6 +294,13 @@ std::vector<LanguageStats> count_all(std::vector<FoundFile>& files,
                     tok_o2[i] = it->second.o200k_base;
                     tok_done[i] = 1;
                 }
+            }
+        } else {
+            static bool warned = false;
+            if (!warned) {
+                std::fprintf(stderr, "tokenc: tokenization failed: %s\n",
+                             tok_err.empty() ? "unknown error" : tok_err.c_str());
+                warned = true;
             }
         }
     } else if (count_tokens) {

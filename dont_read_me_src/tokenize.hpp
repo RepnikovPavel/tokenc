@@ -19,6 +19,7 @@ struct TokenCounts {
 // Tokenize many absolute file paths in one batch (external tiktoken helper).
 // Missing paths are omitted from the result map.
 [[nodiscard]] bool tokenize_files(const std::vector<std::string>& abs_paths,
-                                  std::unordered_map<std::string, TokenCounts>& out);
+                                  std::unordered_map<std::string, TokenCounts>& out,
+                                  std::string& err);
 
 }  // namespace tokenc

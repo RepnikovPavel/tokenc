@@ -33,7 +33,7 @@
 
 namespace {
 
-constexpr const char* kVersion = "tokenc 1.1.0";
+constexpr const char* kVersion = "tokenc 1.1.1";
 
 void print_help()
 {
