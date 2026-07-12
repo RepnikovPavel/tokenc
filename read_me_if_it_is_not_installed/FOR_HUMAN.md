@@ -6,9 +6,10 @@
 - `cmake >= 3.10`
 - `make` (or `ninja`)
 - `git` (only for the one-line install below)
+- `pkg-config`, `libpcre2-dev`, `zlib1g-dev`, `xxd`
 
-Ubuntu/Debian: `sudo apt install build-essential cmake git`
-Fedora/RHEL:   `sudo dnf install gcc-c++ cmake make git`
+Ubuntu/Debian: `sudo apt install build-essential cmake git pkg-config libpcre2-dev zlib1g-dev xxd`
+Fedora/RHEL:   `sudo dnf install gcc-c++ cmake make git pkg-config pcre2-devel zlib-devel vim-common`
 
 ### One-line install
 

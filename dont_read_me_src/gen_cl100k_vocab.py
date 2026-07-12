@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: 0BSD
-"""Generate data/cl100k_vocab.z from tiktoken (build-time only)."""
+"""Generate data/cl100k_vocab.z from tiktoken (build-time only).
+
+Run from repo root:
+  python3 dont_read_me_src/gen_cl100k_vocab.py
+"""
 from __future__ import annotations
 
 import argparse

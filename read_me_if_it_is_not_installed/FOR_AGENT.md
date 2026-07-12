@@ -10,7 +10,7 @@ curl -fsSL https://raw.githubusercontent.com/RepnikovPavel/tokenc/main/read_me_i
 Then verify:
 
 ```sh
-tokenc --version    # expect: tokenc 1.0.0
+tokenc --version    # expect: tokenc 1.3.x
 ```
 
 The script clones the repo, builds it, and installs the binary to

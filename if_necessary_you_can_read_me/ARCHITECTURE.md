@@ -7,7 +7,8 @@ normal use, see `../prompt.txt` instead.
 
 Count physical lines and OpenAI token totals (cl100k_base, o200k_base) for
 source trees. C++ core has no runtime deps beyond glibc; token columns use an
-optional `python3` + `tiktoken` helper (`scripts/tokenc_tokenize.py`).
+native `cl100k.cpp` (port of tiktoken `src/lib.rs`); dev helper
+`dont_read_me_src/gen_cl100k_vocab.py` regenerates `data/cl100k_vocab.z`.
 
 ## Module map (all under `../dont_read_me_src/`)
 
