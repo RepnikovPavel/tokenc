@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(tokenc VERSION 1.0.0 LANGUAGES CXX)
+project(tokenc VERSION 1.1.0 LANGUAGES CXX)
 
 # --- Build settings --------------------------------------------------------
 # C++17 and g++ 9+ are deliberately the only compiler requirements, so tokenc
@@ -30,6 +30,7 @@ add_executable(tokenc
     dont_read_me_src/counter.cpp
     dont_read_me_src/cache.cpp
     dont_read_me_src/output.cpp
+    dont_read_me_src/tokenize.cpp
 )
 
 target_include_directories(tokenc PRIVATE dont_read_me_src)
@@ -43,3 +44,5 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang"
 endif()
 
 install(TARGETS tokenc RUNTIME DESTINATION bin)
+install(FILES scripts/tokenc_tokenize.py DESTINATION share/tokenc
+        PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)

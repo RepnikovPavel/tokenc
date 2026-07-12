@@ -5,8 +5,9 @@ normal use, see `../prompt.txt` instead.
 
 ## Goal
 
-Count physical lines of source code in a directory tree, fast and correctly,
-with no third-party dependencies. Output is fixed TSV for machine consumption.
+Count physical lines and OpenAI token totals (cl100k_base, o200k_base) for
+source trees. C++ core has no runtime deps beyond glibc; token columns use an
+optional `python3` + `tiktoken` helper (`scripts/tokenc_tokenize.py`).
 
 ## Module map (all under `../dont_read_me_src/`)
 
@@ -19,6 +20,7 @@ with no third-party dependencies. Output is fixed TSV for machine consumption.
 | `walker.*`       | Recursive directory walk; composes nested ignore layers.    |
 | `counter.*`      | `mmap`-based line counting across a thread pool.             |
 | `cache.*`        | On-disk cache keyed on `(dev, ino, size, mtime_ns)`.        |
+| `tokenize.*`     | Batch tokenization via tiktoken helper script.              |
 | `output.*`       | TSV rendering (header + per-language rows + Total).         |
 
 ## Data flow

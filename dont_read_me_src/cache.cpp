@@ -22,7 +22,8 @@ namespace {
 //   <path>\t<dev>\t<ino>\t<size>\t<mtime_ns>\t<lines>\n
 //
 // A leading magic line marks the format version for forward compatibility.
-constexpr const char* kMagic = "# tokenc linecache v1";
+constexpr const char* kMagicV1 = "# tokenc linecache v1";
+constexpr const char* kMagicV2 = "# tokenc linecache v2";
 
 }  // namespace
 
@@ -35,25 +36,28 @@ LineCache::LineCache(std::string dir) : dir_(std::move(dir))
     std::istringstream in(content);
     std::string line;
     bool first = true;
+    bool v2 = false;
     while (std::getline(in, line)) {
         if (line.empty())
             continue;
         if (first) {
             first = false;
-            if (line == kMagic)
-                continue;  // recognized header
-            // Not our header: fall through and still try to parse this line.
+            if (line == kMagicV2) {
+                v2 = true;
+                continue;
+            }
+            if (line == kMagicV1)
+                continue;
         }
-        // Parse fields split by '\t'.
         Entry e;
         std::string path;
         std::istringstream ls(line);
         std::string field;
         std::vector<std::string> fields;
-        fields.reserve(6);
+        fields.reserve(8);
         while (std::getline(ls, field, '\t'))
             fields.push_back(field);
-        if (fields.size() != 6)
+        if (fields.size() != 6 && fields.size() != 8)
             continue;
         try {
             path = fields[0];
@@ -62,6 +66,13 @@ LineCache::LineCache(std::string dir) : dir_(std::move(dir))
             e.size = std::stoull(fields[3]);
             e.mtime_ns = std::stoull(fields[4]);
             e.lines = std::stoull(fields[5]);
+            if (fields.size() == 8) {
+                e.cl100k_base = std::stoull(fields[6]);
+                e.o200k_base = std::stoull(fields[7]);
+                e.has_tokens = true;
+            } else if (v2) {
+                continue;
+            }
         } catch (...) {
             continue;
         }
@@ -84,11 +95,52 @@ bool LineCache::lookup(const std::string& path, const fs::Stat& st, std::uint64_
 void LineCache::store(const std::string& path, const fs::Stat& st, std::uint64_t lines)
 {
     Entry e;
+    if (auto it = map_.find(path); it != map_.end())
+        e = it->second;
     e.dev = st.dev;
     e.ino = st.ino;
     e.size = st.size;
     e.mtime_ns = st.mtime_ns;
     e.lines = lines;
+    map_[path] = e;
+    dirty_ = true;
+}
+
+bool LineCache::lookup_tokens(const std::string& path,
+                              const fs::Stat& st,
+                              std::uint64_t& out_lines,
+                              std::uint64_t& out_cl100k,
+                              std::uint64_t& out_o200k) const
+{
+    const auto it = map_.find(path);
+    if (it == map_.end())
+        return false;
+    const Entry& e = it->second;
+    if (e.dev != st.dev || e.ino != st.ino || e.size != st.size || e.mtime_ns != st.mtime_ns)
+        return false;
+    if (!e.has_tokens)
+        return false;
+    out_lines = e.lines;
+    out_cl100k = e.cl100k_base;
+    out_o200k = e.o200k_base;
+    return true;
+}
+
+void LineCache::store_tokens(const std::string& path,
+                             const fs::Stat& st,
+                             std::uint64_t lines,
+                             std::uint64_t cl100k,
+                             std::uint64_t o200k)
+{
+    Entry e;
+    e.dev = st.dev;
+    e.ino = st.ino;
+    e.size = st.size;
+    e.mtime_ns = st.mtime_ns;
+    e.lines = lines;
+    e.cl100k_base = cl100k;
+    e.o200k_base = o200k;
+    e.has_tokens = true;
     map_[path] = e;
     dirty_ = true;
 }
@@ -105,10 +157,13 @@ bool LineCache::flush()
     std::ofstream out(tmp, std::ios::out | std::ios::trunc);
     if (!out)
         return false;
-    out << kMagic << '\n';
+    out << kMagicV2 << '\n';
     for (const auto& [path, e] : map_) {
         out << path << '\t' << e.dev << '\t' << e.ino << '\t'
-            << e.size << '\t' << e.mtime_ns << '\t' << e.lines << '\n';
+            << e.size << '\t' << e.mtime_ns << '\t' << e.lines;
+        if (e.has_tokens)
+            out << '\t' << e.cl100k_base << '\t' << e.o200k_base;
+        out << '\n';
     }
     out.flush();
     if (!out.good())

@@ -35,6 +35,8 @@ struct LanguageStats {
     std::string language;
     std::uint64_t files = 0;
     std::uint64_t lines = 0;
+    std::uint64_t cl100k_base = 0;
+    std::uint64_t o200k_base = 0;
 };
 
 // A cache of (dev,ino,mtime,size) -> lines for files we already counted.
@@ -45,11 +47,18 @@ class LineCache;
 // `threads` <= 0 means auto (= hardware concurrency).
 // When `skip_generated` is true, files that look machine-generated (see
 // is_generated_file) are excluded from the totals and dropped from the result.
+struct CountTotals {
+    std::uint64_t files = 0;
+    std::uint64_t lines = 0;
+    std::uint64_t cl100k_base = 0;
+    std::uint64_t o200k_base = 0;
+};
+
 std::vector<LanguageStats> count_all(std::vector<FoundFile>& files,
                                      LineCache* cache,
                                      unsigned threads,
-                                     std::uint64_t& total_files,
-                                     std::uint64_t& total_lines,
-                                     bool skip_generated);
+                                     CountTotals& totals,
+                                     bool skip_generated,
+                                     bool count_tokens);
 
 }  // namespace tokenc

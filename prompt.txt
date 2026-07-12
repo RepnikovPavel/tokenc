@@ -26,11 +26,14 @@ HOW TO CALL
   tokenc /some/file.py     # also works on a single file
 
 OUTPUT  (TSV, tab-separated, deterministic, easy to parse)
-  language<TAB>files<TAB>lines
-  C++<TAB>8<TAB>1325
-  Python<TAB>2<TAB>3
+  language<TAB>files<TAB>lines<TAB>cl100k_base<TAB>o200k_base
+  C++<TAB>8<TAB>1325<TAB>11800<TAB>11750
   ...
-  Total<TAB>10<TAB>1328
+  Total<TAB>10<TAB>1328<TAB>12000<TAB>11900
+
+  Token columns: OpenAI tiktoken encodings (GPT-4 / GPT-4o). Requires
+  python3 + `pip install tiktoken` and scripts/tokenc_tokenize.py on PATH
+  (installed to share/tokenc/ by cmake --install). Use --no-tokens for lines only.
 
   Rows are sorted by lines descending. The last row is always "Total".
   Lines = physical lines: each '\n' is one line, plus one more if the file
@@ -42,6 +45,7 @@ FLAGS
   --include-generated   Count machine-generated files (off by default)
   --all                 Descend into git submodules (off by default)
   --no-cache            Do not read or write the on-disk cache
+  --no-tokens           Skip cl100k_base/o200k_base columns
   --format              Pretty psql-style table for humans (instead of TSV)
   -j, --jobs=N          Worker threads (default: auto)
   --version             Print version

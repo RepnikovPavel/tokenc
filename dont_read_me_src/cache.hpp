@@ -29,8 +29,21 @@ public:
     // true. Otherwise return false.
     bool lookup(const std::string& path, const fs::Stat& st, std::uint64_t& out_lines) const;
 
+    // Full cache hit including token counts (v2 entries only).
+    bool lookup_tokens(const std::string& path,
+                       const fs::Stat& st,
+                       std::uint64_t& out_lines,
+                       std::uint64_t& out_cl100k,
+                       std::uint64_t& out_o200k) const;
+
     // Remember a freshly computed line count for this file.
     void store(const std::string& path, const fs::Stat& st, std::uint64_t lines);
+
+    void store_tokens(const std::string& path,
+                      const fs::Stat& st,
+                      std::uint64_t lines,
+                      std::uint64_t cl100k,
+                      std::uint64_t o200k);
 
     // Persist the in-memory cache to disk atomically. Safe to call once at the
     // end of a run. Returns false if the write failed (the program continues).
@@ -43,6 +56,9 @@ private:
         std::uint64_t size = 0;
         std::uint64_t mtime_ns = 0;
         std::uint64_t lines = 0;
+        std::uint64_t cl100k_base = 0;
+        std::uint64_t o200k_base = 0;
+        bool has_tokens = false;
     };
 
     std::string dir_;

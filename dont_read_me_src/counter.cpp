@@ -8,10 +8,12 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cstdio>
 #include <cstring>
 #include <thread>
 
 #include "cache.hpp"
+#include "tokenize.hpp"
 
 // How many leading bytes of a file to scan for a generator banner. Generators
 // put the banner at the very top, so 1 KiB is comfortably enough. File-scope
@@ -204,9 +206,9 @@ std::uint64_t count_lines(const std::string& path)
 std::vector<LanguageStats> count_all(std::vector<FoundFile>& files,
                                      LineCache* cache,
                                      unsigned threads,
-                                     std::uint64_t& total_files,
-                                     std::uint64_t& total_lines,
-                                     bool skip_generated)
+                                     CountTotals& totals,
+                                     bool skip_generated,
+                                     bool count_tokens)
 {
     if (threads == 0) {
         const unsigned hw = std::thread::hardware_concurrency();
@@ -219,8 +221,12 @@ std::vector<LanguageStats> count_all(std::vector<FoundFile>& files,
 
     const std::size_t n = files.size();
     std::vector<std::uint64_t> counts(n, 0);
-    std::vector<unsigned char> counted(n, 0);       // 1 if cache hit
-    std::vector<unsigned char> generated(n, 0);     // 1 if excluded as generated
+    std::vector<std::uint64_t> tok_cl(n, 0);
+    std::vector<std::uint64_t> tok_o2(n, 0);
+    std::vector<unsigned char> counted(n, 0);        // 1 if line cache hit
+    std::vector<unsigned char> tok_cached(n, 0);     // 1 if full token cache hit
+    std::vector<unsigned char> tok_done(n, 0);     // 1 if token counts are known
+    std::vector<unsigned char> generated(n, 0);      // 1 if excluded as generated
 
     std::atomic<std::size_t> next{0};
     auto worker = [&]() {
@@ -234,16 +240,29 @@ std::vector<LanguageStats> count_all(std::vector<FoundFile>& files,
                 generated[i] = 1;
                 continue;
             }
-            // Try cache first.
+            if (cache && count_tokens) {
+                std::uint64_t cl = 0, o2 = 0, cached_lines = 0;
+                if (cache->lookup_tokens(files[i].path, files[i].stat, cached_lines, cl, o2)) {
+                    counts[i] = cached_lines;
+                    tok_cl[i] = cl;
+                    tok_o2[i] = o2;
+                    counted[i] = 1;
+                    tok_cached[i] = 1;
+                    tok_done[i] = 1;
+                    continue;
+                }
+            }
             if (cache) {
                 std::uint64_t cached = 0;
                 if (cache->lookup(files[i].path, files[i].stat, cached)) {
                     counts[i] = cached;
                     counted[i] = 1;
-                    continue;
+                    if (!count_tokens)
+                        continue;
                 }
             }
-            counts[i] = count_lines(files[i].path);
+            if (!counted[i])
+                counts[i] = count_lines(files[i].path);
         }
     };
 
@@ -254,28 +273,69 @@ std::vector<LanguageStats> count_all(std::vector<FoundFile>& files,
     for (auto& th : pool)
         th.join();
 
+    if (count_tokens && tokenizers_available()) {
+        std::vector<std::string> todo_paths;
+        std::vector<std::size_t> todo_idx;
+        todo_paths.reserve(n);
+        todo_idx.reserve(n);
+        for (std::size_t i = 0; i < n; ++i) {
+            if (generated[i] || tok_cached[i])
+                continue;
+            todo_paths.push_back(files[i].path);
+            todo_idx.push_back(i);
+        }
+        std::unordered_map<std::string, TokenCounts> tok_map;
+        if (tokenize_files(todo_paths, tok_map)) {
+            for (std::size_t k = 0; k < todo_idx.size(); ++k) {
+                const std::size_t i = todo_idx[k];
+                if (auto it = tok_map.find(files[i].path); it != tok_map.end()) {
+                    tok_cl[i] = it->second.cl100k_base;
+                    tok_o2[i] = it->second.o200k_base;
+                    tok_done[i] = 1;
+                }
+            }
+        }
+    } else if (count_tokens) {
+        static bool warned = false;
+        if (!warned) {
+            std::fprintf(stderr,
+                         "tokenc: tokenizers unavailable (need python3 + tiktoken); "
+                         "cl100k_base/o200k_base columns will be 0\n");
+            warned = true;
+        }
+    }
+
     // Aggregate per language. Generated files are dropped entirely.
     std::unordered_map<std::string, LanguageStats> by_lang;
     by_lang.reserve(64);
-    total_files = 0;
-    total_lines = 0;
+    totals = {};
     for (std::size_t i = 0; i < n; ++i) {
         if (generated[i])
             continue;
         auto it = by_lang.find(files[i].language);
         if (it == by_lang.end()) {
-            auto [ins, _] = by_lang.emplace(files[i].language,
-                                            LanguageStats{files[i].language, 0, 0});
+            LanguageStats ls;
+            ls.language = files[i].language;
+            auto [ins, _] = by_lang.emplace(files[i].language, std::move(ls));
             it = ins;
         }
         it->second.files += 1;
         it->second.lines += counts[i];
-        total_files += 1;
-        total_lines += counts[i];
+        it->second.cl100k_base += tok_cl[i];
+        it->second.o200k_base += tok_o2[i];
+        totals.files += 1;
+        totals.lines += counts[i];
+        totals.cl100k_base += tok_cl[i];
+        totals.o200k_base += tok_o2[i];
 
-        // Update cache for entries we actually counted (not cache hits).
-        if (cache && !counted[i])
-            cache->store(files[i].path, files[i].stat, counts[i]);
+        if (cache) {
+            if (count_tokens && tok_done[i] && !tok_cached[i]) {
+                cache->store_tokens(files[i].path, files[i].stat, counts[i],
+                                    tok_cl[i], tok_o2[i]);
+            } else if (!counted[i]) {
+                cache->store(files[i].path, files[i].stat, counts[i]);
+            }
+        }
     }
 
     std::vector<LanguageStats> result;

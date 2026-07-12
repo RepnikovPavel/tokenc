@@ -17,12 +17,11 @@ RUN cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
  && cmake --build build -j"$(nproc)"
 
 FROM debian:stable-slim
-# libstdc++6 is present in the base image already, but state it explicitly in
-# case the base image changes. The tokenc binary links libstdc++ statically,
-# so this is belt-and-suspenders.
 RUN apt-get update \
- && apt-get install -y --no-install-recommends libstdc++6 \
+ && apt-get install -y --no-install-recommends libstdc++6 python3 python3-pip \
+ && pip3 install --no-cache-dir tiktoken \
  && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /src/build/tokenc /usr/local/bin/tokenc
+COPY --from=builder /src/scripts/tokenc_tokenize.py /usr/local/share/tokenc/tokenc_tokenize.py
 ENTRYPOINT ["tokenc"]
 CMD ["--help"]

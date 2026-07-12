@@ -28,11 +28,12 @@
 #include "counter.hpp"
 #include "fs.hpp"
 #include "output.hpp"
+#include "tokenize.hpp"
 #include "walker.hpp"
 
 namespace {
 
-constexpr const char* kVersion = "tokenc 1.0.0";
+constexpr const char* kVersion = "tokenc 1.1.0";
 
 void print_help()
 {
@@ -44,7 +45,8 @@ void print_help()
         "  Counts physical lines of recognized source files in a directory tree.\n"
         "  Respects .gitignore and a built-in non-code ignore list.\n"
         "  Machine-generated files (protoc/gRPC/thrift/codegen output) are excluded.\n"
-        "  Output is TSV: language<TAB>files<TAB>lines, plus a Total row.\n"
+        "  Output is TSV: language<TAB>files<TAB>lines<TAB>cl100k_base<TAB>o200k_base.\n"
+        "  Token columns use OpenAI tiktoken (python3 + pip install tiktoken).\n"
         "\n"
         "Options:\n"
         "  path                    Directory or file to count (default: .)\n"
@@ -53,6 +55,7 @@ void print_help()
         "      --include-generated Count machine-generated files (off by default)\n"
         "      --all               Descend into git submodules (off by default)\n"
         "      --no-cache          Do not read or write the line cache\n"
+        "      --no-tokens         Skip token counting (lines only)\n"
         "      --format            Pretty psql-like table instead of TSV\n"
         "  -j, --jobs=N            Worker threads (default: auto)\n"
         "  -h, --help              Show this help and exit\n"
@@ -89,6 +92,7 @@ int main(int argc, char** argv)
     bool include_generated = false;   // generated code excluded by default
     bool include_submodules = false;  // git submodules skipped by default
     bool pretty_format = false;       // default output is machine TSV
+    bool count_tokens = true;
     unsigned jobs = 0;
     bool path_set = false;
 
@@ -112,6 +116,8 @@ int main(int argc, char** argv)
             pretty_format = true;
         } else if (arg == "--no-cache") {
             use_cache = false;
+        } else if (arg == "--no-tokens") {
+            count_tokens = false;
         } else if (arg == "-j" || arg == "--jobs") {
             if (i + 1 >= argc) { std::fprintf(stderr, "tokenc: --jobs requires an argument\n"); return 2; }
             if (!parse_uint(argv[++i], jobs)) { std::fprintf(stderr, "tokenc: invalid --jobs value\n"); return 2; }
@@ -142,17 +148,17 @@ int main(int argc, char** argv)
     if (use_cache)
         cache = std::make_unique<tokenc::LineCache>(tokenc::fs::cache_dir());
 
-    std::uint64_t total_files = 0;
-    std::uint64_t total_lines = 0;
+    tokenc::CountTotals totals;
     std::vector<tokenc::LanguageStats> stats =
-        tokenc::count_all(files, cache.get(), jobs, total_files, total_lines,
-                          /*skip_generated=*/!include_generated);
+        tokenc::count_all(files, cache.get(), jobs, totals,
+                          /*skip_generated=*/!include_generated, count_tokens);
 
     if (cache) cache->flush();
 
+    const bool show_tokens = count_tokens;
     const std::string report = pretty_format
-        ? tokenc::render_table(stats, total_files, total_lines)
-        : tokenc::render_tsv(stats, total_files, total_lines);
+        ? tokenc::render_table(stats, totals, show_tokens)
+        : tokenc::render_tsv(stats, totals, show_tokens);
     std::fputs(report.c_str(), stdout);
     return 0;
 }

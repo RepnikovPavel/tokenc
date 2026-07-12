@@ -1,3 +1,6 @@
+# memc index (local)
+.memc/
+
 # Build artifacts
 /build/
 /build-*/
