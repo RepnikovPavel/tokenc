@@ -1,44 +1,18 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: 0BSD
-"""Compare tokenc token totals against reference tiktoken per file."""
+"""Optional dev check: native tokenc cl100k vs reference tiktoken."""
 from __future__ import annotations
 
 import subprocess
 import sys
 from pathlib import Path
 
-try:
-    import tiktoken
-except ImportError:
-    print("verify_tokens: pip install tiktoken", file=sys.stderr)
-    raise SystemExit(2)
 
-
-def parse_tokenc_tsv(text: str) -> dict[str, tuple[int, int]]:
-    rows: dict[str, tuple[int, int]] = {}
+def parse_total(text: str) -> int | None:
     for line in text.splitlines():
-        if not line or line.startswith("language"):
-            continue
-        parts = line.split("\t")
-        if len(parts) < 5:
-            continue
-        lang, cl, o2 = parts[0], int(parts[3]), int(parts[4])
-        rows[lang] = (cl, o2)
-    return rows
-
-
-def reference_for_paths(paths_file: Path) -> tuple[int, int]:
-    enc_cl = tiktoken.get_encoding("cl100k_base")
-    enc_o2 = tiktoken.get_encoding("o200k_base")
-    cl = o2 = 0
-    for line in paths_file.read_text().splitlines():
-        p = line.strip()
-        if not p:
-            continue
-        data = Path(p).read_bytes().decode("utf-8", "replace")
-        cl += len(enc_cl.encode(data))
-        o2 += len(enc_o2.encode(data))
-    return cl, o2
+        if line.startswith("Total\t"):
+            return int(line.split("\t")[3])
+    return None
 
 
 def main() -> int:
@@ -49,28 +23,34 @@ def main() -> int:
     binary = Path(sys.argv[1])
     root = Path(sys.argv[2]).resolve()
     out = subprocess.check_output([str(binary), "--no-cache", str(root)], text=True)
-    reported = parse_tokenc_tsv(out)
-    total = reported.get("Total")
-    if not total:
-        print("verify_tokens: no Total row in tokenc output", file=sys.stderr)
+    reported = parse_total(out)
+    if reported is None:
+        print("verify_tokens: no Total row", file=sys.stderr)
         return 1
 
+    try:
+        import tiktoken
+    except ImportError:
+        print(f"OK native cl100k_base={reported} (tiktoken not installed; skip reference)")
+        return 0
+
+    enc = tiktoken.get_encoding("cl100k_base")
     cache_paths = Path.home() / ".cache/tokenc/tokenize_paths.txt"
     if not cache_paths.exists():
-        print("verify_tokens: missing cache paths file; run tokenc first", file=sys.stderr)
+        print("verify_tokens: run tokenc first to populate paths cache", file=sys.stderr)
         return 1
 
-    ref_cl, ref_o2 = reference_for_paths(cache_paths)
-    ok = True
-    if total[0] != ref_cl:
-        print(f"MISMATCH cl100k_base: tokenc={total[0]} tiktoken={ref_cl}")
-        ok = False
-    if total[1] != ref_o2:
-        print(f"MISMATCH o200k_base: tokenc={total[1]} tiktoken={ref_o2}")
-        ok = False
-    if ok:
-        print(f"OK cl100k_base={total[0]} o200k_base={total[1]} ({cache_paths.stat().st_size} bytes paths list)")
-    return 0 if ok else 1
+    ref = 0
+    for line in cache_paths.read_text().splitlines():
+        p = line.strip()
+        if p:
+            ref += len(enc.encode_ordinary(Path(p).read_text(encoding="utf-8", errors="replace")))
+
+    if reported != ref:
+        print(f"MISMATCH cl100k_base: tokenc={reported} tiktoken={ref}")
+        return 1
+    print(f"OK cl100k_base={reported}")
+    return 0
 
 
 if __name__ == "__main__":

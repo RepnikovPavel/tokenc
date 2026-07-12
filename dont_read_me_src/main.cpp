@@ -33,7 +33,7 @@
 
 namespace {
 
-constexpr const char* kVersion = "tokenc 1.2.0";
+constexpr const char* kVersion = "tokenc 1.3.0";
 
 void print_help()
 {
@@ -47,7 +47,7 @@ void print_help()
         "  Machine-generated files (protoc/gRPC/thrift/codegen output) are excluded.\n"
         "  Output is TSV: language<TAB>files<TAB>lines<TAB>cl100k_base<TAB>o200k_base\n"
         "    <TAB>lines_pct<TAB>tokens_pct (percent columns omitted with --no-tokens).\n"
-        "  Token columns use OpenAI tiktoken (python3 + pip install tiktoken).\n"
+        "  Token column cl100k_base: native C++ (tiktoken-compatible GPT-4 encoding).\n"
         "  --format adds a pretty table with lines %% and tokens %% columns.\n"
         "\n"
         "Options:\n"

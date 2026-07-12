@@ -87,20 +87,8 @@ else
     sudo sh -c "BIN='$BIN' BINDIR='$BINDIR'; mkdir -p \"\$BINDIR\"; install -m 0755 \"\$BIN\" \"\$BINDIR/tokenc\""
 fi
 
-SHAREDIR="$PREFIX/share/tokenc"
-if writable_without_root; then
-    mkdir -p "$SHAREDIR"
-    install -m 0755 "$SRC_DIR/scripts/tokenc_tokenize.py" "$SHAREDIR/tokenc_tokenize.py"
-else
-    sudo sh -c "mkdir -p '$SHAREDIR'; install -m 0755 '$SRC_DIR/scripts/tokenc_tokenize.py' '$SHAREDIR/tokenc_tokenize.py'"
-fi
-
 msg "Installed: $BINDIR/tokenc"
 "$BINDIR/tokenc" --version
-
-if ! python3 -c "import tiktoken" 2>/dev/null; then
-    msg "For token columns: pip install tiktoken  (or: pip3 install --user tiktoken)"
-fi
 
 if command -v tokenc >/dev/null 2>&1; then
     msg "Done. Available on PATH as: $(command -v tokenc)"

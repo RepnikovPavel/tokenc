@@ -303,14 +303,6 @@ std::vector<LanguageStats> count_all(std::vector<FoundFile>& files,
                 warned = true;
             }
         }
-    } else if (count_tokens) {
-        static bool warned = false;
-        if (!warned) {
-            std::fprintf(stderr,
-                         "tokenc: tokenizers unavailable (need python3 + tiktoken); "
-                         "cl100k_base/o200k_base columns will be 0\n");
-            warned = true;
-        }
     }
 
     // Aggregate per language. Generated files are dropped entirely.

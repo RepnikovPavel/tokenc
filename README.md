@@ -16,14 +16,15 @@ C++ Header	7	335	2980	2955
 Total	15	1660	14822	14751
 ```
 
-Token columns use OpenAI **cl100k_base** (GPT-4) and **o200k_base** (GPT-4o)
-via `python3` + [`tiktoken`](https://github.com/openai/tiktoken). Use
-`--no-tokens` for lines-only output.
+**cl100k_base** (GPT-4) is counted by a **native C++** encoder ported from
+[OpenAI tiktoken](https://github.com/openai/tiktoken) (`src/lib.rs`) — no
+Python or pip at runtime. The `o200k_base` column is reserved (0 for now).
+Use `--no-tokens` for lines-only output.
 
 ## Install
 
 Requires a C++17 compiler (`g++ >= 9` or `clang++ >= 9`) and `cmake >= 3.10`.
-For token columns: `python3` and `pip install tiktoken`.
+Runtime deps for token columns: `libpcre2-8` and `zlib` (standard on Linux).
 
 ```sh
 git clone https://github.com/RepnikovPavel/tokenc.git
