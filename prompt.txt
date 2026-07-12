@@ -26,10 +26,10 @@ HOW TO CALL
   tokenc /some/file.py     # also works on a single file
 
 OUTPUT  (TSV, tab-separated, deterministic, easy to parse)
-  language<TAB>files<TAB>lines<TAB>cl100k_base<TAB>o200k_base
-  C++<TAB>8<TAB>1325<TAB>11800<TAB>11750
+  language<TAB>files<TAB>lines<TAB>cl100k_base<TAB>o200k_base<TAB>lines_pct<TAB>tokens_pct
+  C++<TAB>8<TAB>1325<TAB>11800<TAB>11750<TAB>79.8<TAB>81.2
   ...
-  Total<TAB>10<TAB>1328<TAB>12000<TAB>11900
+  Total<TAB>10<TAB>1328<TAB>12000<TAB>11900<TAB>100.0<TAB>100.0
 
   Token columns: OpenAI tiktoken encodings (GPT-4 / GPT-4o). Requires
   python3 + `pip install tiktoken`. Script is embedded in the binary (also
@@ -46,7 +46,7 @@ FLAGS
   --all                 Descend into git submodules (off by default)
   --no-cache            Do not read or write the on-disk cache
   --no-tokens           Skip cl100k_base/o200k_base columns
-  --format              Pretty psql-style table for humans (instead of TSV)
+  --format              Pretty psql-style table (lines %, tokens %) instead of TSV
   -j, --jobs=N          Worker threads (default: auto)
   --version             Print version
   --help                Short help

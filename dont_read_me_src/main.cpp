@@ -33,7 +33,7 @@
 
 namespace {
 
-constexpr const char* kVersion = "tokenc 1.1.1";
+constexpr const char* kVersion = "tokenc 1.2.0";
 
 void print_help()
 {
@@ -45,8 +45,10 @@ void print_help()
         "  Counts physical lines of recognized source files in a directory tree.\n"
         "  Respects .gitignore and a built-in non-code ignore list.\n"
         "  Machine-generated files (protoc/gRPC/thrift/codegen output) are excluded.\n"
-        "  Output is TSV: language<TAB>files<TAB>lines<TAB>cl100k_base<TAB>o200k_base.\n"
+        "  Output is TSV: language<TAB>files<TAB>lines<TAB>cl100k_base<TAB>o200k_base\n"
+        "    <TAB>lines_pct<TAB>tokens_pct (percent columns omitted with --no-tokens).\n"
         "  Token columns use OpenAI tiktoken (python3 + pip install tiktoken).\n"
+        "  --format adds a pretty table with lines %% and tokens %% columns.\n"
         "\n"
         "Options:\n"
         "  path                    Directory or file to count (default: .)\n"

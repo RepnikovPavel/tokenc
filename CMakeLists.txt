@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(tokenc VERSION 1.1.1 LANGUAGES CXX)
+project(tokenc VERSION 1.2.0 LANGUAGES CXX)
 
 # --- Build settings --------------------------------------------------------
 # C++17 and g++ 9+ are deliberately the only compiler requirements, so tokenc
